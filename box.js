@@ -3,41 +3,58 @@ var ctx=canvas.getContext("2d");
 
 var CANVAS_WIDTH = canvas.width;
 var CANVAS_HEIGHT = canvas.height;
-var STEP = CANVAS_WIDTH/16;
+var STEP = CANVAS_WIDTH/8;
 
 // 地图
+// 0:空地，1:箱子，2:墙壁，3:目标地，4:箱子在目标地
 var mapData = [
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,2,2,2,2,0,0,0],
+  [0,2,0,0,2,2,0,0],
+  [2,2,0,3,0,2,2,2],
+  [2,0,0,0,0,3,0,2],
+  [2,3,3,0,3,2,0,2],
+  [2,0,1,0,0,1,0,2],
+  [2,2,0,3,0,0,2,2],
+  [0,2,2,2,2,2,2,0],
 ]
 
 // 背景
-var bgImage = new Image();
-bgImage.onload = function(){
-  bgReady = true;
+
+var wallImage = new Image();
+wallImage.onload = function() {
+  wallReady = true;
 };
-bgImage.src = "images/bg.jpg";
+wallImage.src = "images/wall.png";
 
+var createMap = function() {
+  // 背景色
+  var grd = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+  grd.addColorStop(0, "#333");
+  grd.addColorStop(1, "#999");
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-var createMap = function(){
-  for (var r = 0; r < 16; r++) {
-    for (var c = 0; c < 16; c++) {
+  var boxes = [];
+  var box_index = 0;
+  for (var r = 0; r < 8; r++) {
+    for (var c = 0; c < 8; c++) {
+      // 箱子
+      // if (mapData[r][c] == 1) {
+      //   if (boxReady) {
+      //     boxes[box_index] = new Box({r: r, c: c});
+      //     box_index += 1;
+      //     ctx.drawImage(boxImage, 0,0,190,190, STEP*c, STEP*r, STEP, STEP);
+      //   }
+      // }
+      // 墙壁
       if (mapData[r][c] == 2) {
-        ctx.fillStyle="red";
+        if (wallReady) {
+          ctx.drawImage(wallImage, 0,0,161,161, STEP*c, STEP*r, STEP, STEP);
+        }
+      }
+      // 目标地
+      if (mapData[r][c] == 3) {
+        ctx.fillStyle = "blue";
         ctx.fillRect(STEP*c, STEP*r, STEP, STEP);
       }
     }
@@ -55,7 +72,7 @@ personImage.src = 'images/person.png';
 var person = {
   speed: 50,
   direction: {x: 0, y: 0},
-  positionMap: {r: 1, c: 5},
+  positionMap: {r: 2, c: 2},
 }
 
 // 箱子
@@ -65,40 +82,107 @@ boxImage.onload = function(){
 }
 boxImage.src = 'images/box.png';
 
+var boxOkImage = new Image();
+boxOkImage.onload = function() {
+  boxOkReady = true;
+}
+boxOkImage.src = 'images/box_ok.png';
+
 var box = {
   positionMap: {r: 5, c: 5},
 }
+
+// class Box {
+//   construct(positionMap) {
+//     this.positionMap = positionMap;
+//   } 
+// }
 
 
 // 转换为像素地址
 var personPosition = {};
 var boxPosition = {};
-var convertToPosition = function(obj){
+var convertToPosition = function(obj) {
   return {x: (obj.positionMap.c * STEP), y: (obj.positionMap.r * STEP)};
 };
 
 // 处理玩家输入
 var key = {};
-addEventListener('keyup', function(e){
+addEventListener('keyup', function(e) {
   key[e.keyCode] = true;
 }, false);
 
 
 // 重置
-var reset = function(){
-  person.positionMap.r = 1;
-  person.positionMap.c = 5;
+var reset = function() {
+  person.positionMap.r = 2;
+  person.positionMap.c = 2;
 }
 
 // 更新对象
-var move = function(){
+var movePerson = function() {
   new_c = person.positionMap.c + person.direction.x;
   new_r = person.positionMap.r + person.direction.y;
-  if (mapData[new_r][new_c] == 0 || mapData[new_r][new_c] == 1) {
+  if (mapData[new_r][new_c] != 1 && mapData[new_r][new_c] != 2) {
     person.positionMap.r = new_r;
     person.positionMap.c = new_c;
   }
 };
+
+var moveBox = function() {
+  new_c = box.positionMap.c + person.direction.x;
+  new_r = box.positionMap.r + person.direction.y;
+  if ((box.positionMap.c - person.positionMap.c == person.direction.x) && (box.positionMap.r == person.positionMap.r)) {
+    if (new_c > 0 && new_c < 15) {
+      if (mapData[new_r][new_c] != 2) {
+        if (mapData[box.positionMap.r][box.positionMap.c] == 4) {
+          mapData[box.positionMap.r][box.positionMap.c] = 3;
+        }
+        else {
+          mapData[box.positionMap.r][box.positionMap.c] = 0;
+        }
+
+        if (mapData[new_r][new_c] == 3) {
+          mapData[new_r][new_c] = 4;
+        }
+        else {
+          
+          mapData[new_r][new_c] = 1;
+        }
+
+        box.positionMap.c = new_c;
+      }
+    }
+  }
+
+  if ((box.positionMap.r - person.positionMap.r == person.direction.y) && (box.positionMap.c == person.positionMap.c)) {
+    if (new_r > 0 && new_r < 15) {
+      if (mapData[new_r][new_c] != 2) {
+        if (mapData[box.positionMap.r][box.positionMap.c] == 4) {
+          mapData[box.positionMap.r][box.positionMap.c] = 3;
+        }
+        else {
+          mapData[box.positionMap.r][box.positionMap.c] = 0;
+        }
+
+        if (mapData[new_r][new_c] == 3) {
+          mapData[new_r][new_c] = 4; 
+        }
+        else {
+          mapData[new_r][new_c] = 1;
+        }
+
+        box.positionMap.r = new_r;
+      }
+    }
+  }
+  
+};
+
+var move = function() {
+  moveBox();
+  movePerson();
+}
 
 var update = function(){
 
@@ -139,19 +223,27 @@ var update = function(){
 // 渲染对象
 var render = function(){
   // ctx.clearRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  if (bgReady && personReady && boxReady) {
-    ctx.drawImage(bgImage,0,0);
-    ctx.drawImage(personImage,0,0,110,110,personPosition.x,personPosition.y,STEP,STEP);
-    ctx.drawImage(boxImage,0,0,38,38,boxPosition.x,boxPosition.y,STEP,STEP);
+  if (personReady && boxReady && boxOkReady) {
     createMap();
+    ctx.drawImage(personImage, 0,0,165,165, personPosition.x, personPosition.y, STEP, STEP);
+
+    if (mapData[box.positionMap.r][box.positionMap.c] == 4) {
+      ctx.drawImage(boxOkImage, 0,0,190,190, boxPosition.x, boxPosition.y, STEP, STEP);
+    }
+    else {
+      ctx.drawImage(boxImage, 0,0,190,190, boxPosition.x, boxPosition.y, STEP, STEP);
+    }
+    
   }
 
 };
+
 
 // 主循环
 var main = function(){
   personPosition = convertToPosition(person);
   boxPosition = convertToPosition(box);
+
   update();
   render();
 };
