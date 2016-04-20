@@ -13,7 +13,7 @@ var mapData = [
   [2,2,0,3,0,2,2,2],
   [2,0,0,0,0,3,0,2],
   [2,3,3,0,3,2,0,2],
-  [2,0,1,0,0,1,0,2],
+  [2,0,0,0,0,0,0,2],
   [2,2,0,3,0,0,2,2],
   [0,2,2,2,2,2,2,0],
 ]
@@ -25,6 +25,12 @@ wallImage.onload = function() {
   wallReady = true;
 };
 wallImage.src = "images/wall.png";
+
+var destinationImage = new Image();
+destinationImage.onload = function() {
+  destinationReady = true;
+};
+destinationImage.src = "images/destination.png";
 
 var createMap = function() {
   // 背景色
@@ -54,8 +60,10 @@ var createMap = function() {
       }
       // 目标地
       if (mapData[r][c] == 3) {
-        ctx.fillStyle = "blue";
-        ctx.fillRect(STEP*c, STEP*r, STEP, STEP);
+        if (destinationReady) {
+          ctx.drawImage(destinationImage, 0,0,160,160, STEP*c, STEP*r, STEP, STEP);
+        }
+        
       }
     }
   }
@@ -123,7 +131,7 @@ var reset = function() {
 var movePerson = function() {
   new_c = person.positionMap.c + person.direction.x;
   new_r = person.positionMap.r + person.direction.y;
-  if (mapData[new_r][new_c] != 1 && mapData[new_r][new_c] != 2) {
+  if (mapData[new_r][new_c] != 1 && mapData[new_r][new_c] != 2 && mapData[new_r][new_c] != 4) {
     person.positionMap.r = new_r;
     person.positionMap.c = new_c;
   }
